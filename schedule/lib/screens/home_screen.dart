@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -755,18 +756,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               ),
               const SizedBox(height: 8),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_active, color: Color(task['color'] ?? 0xFF667eea)),
-                  const SizedBox(width: 8),
-                  Text(
-                    (task['reminder'] ?? 'Không nhắc'),
-                    style: calendarFont.copyWith(fontSize: 16),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
@@ -879,41 +868,41 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   child: ListView(
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    children: [
+                  children: [
                       // Thanh tiêu đề
-                      Row(
+                    Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
+                      children: [
+                        IconButton(
                             icon: const Icon(Icons.close, color: Color(0xFF667eea)),
-                            onPressed: () => Navigator.pop(context),
-                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
                           Flexible(
                             child: Text('Sửa thời gian biểu',
                               style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
                               overflow: TextOverflow.ellipsis,
-                            ),
                           ),
-                          IconButton(
+                        ),
+                        IconButton(
                             icon: const Icon(Icons.check, color: Color(0xFF667eea)),
-                            onPressed: () async {
-                              if (titleController.text.trim().isEmpty) {
-                                setModalState(() {
-                                  _titleError = true;
-                                });
-                                return;
-                              } else {
-                                setModalState(() {
-                                  _titleError = false;
-                                });
-                              }
+                          onPressed: () async {
+                            if (titleController.text.trim().isEmpty) {
+                              setModalState(() {
+                                _titleError = true;
+                              });
+                              return;
+                            } else {
+                              setModalState(() {
+                                _titleError = false;
+                              });
+                            }
                               // Nếu lặp lại tuần, tạo/cập nhật nhiều task
                               if (repeatWeekly) {
                                 for (int i = 0; i < repeatCount; i++) {
                                   final date = selectedDateTime.add(Duration(days: 7 * i));
                                   if (i == 0) {
                                     // Update task hiện tại
-                                    await FirebaseFirestore.instance.collection('tasks').doc(task['id']).update({
+                            await FirebaseFirestore.instance.collection('tasks').doc(task['id']).update({
                                       'title': titleController.text,
                                       'desc': detailController.text,
                                       'dateTime': date.toIso8601String(),
@@ -948,198 +937,156 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                 await FirebaseFirestore.instance.collection('tasks').doc(task['id']).update({
                                   'title': titleController.text,
                                   'desc': detailController.text,
-                                  'dateTime': selectedDateTime.toIso8601String(),
-                                  'date': DateFormat('yyyy-MM-dd').format(selectedDateTime),
-                                  'time': DateFormat('HH:mm').format(selectedDateTime),
-                                  'color': selectedColor.value,
+                              'dateTime': selectedDateTime.toIso8601String(),
+                              'date': DateFormat('yyyy-MM-dd').format(selectedDateTime),
+                              'time': DateFormat('HH:mm').format(selectedDateTime),
+                              'color': selectedColor.value,
                                   'type': _activityIndex == 0 ? 'nhiem_vu' : 'su_kien',
                                   'repeatWeekly': false,
                                   'repeatCount': 1,
-                                  'important': important,
-                                });
+                              'important': important,
+                            });
                               }
-                              Navigator.pop(context);
-                            },
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Hoạt động
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      // Hoạt động
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
                               onTap: () => setModalState(() => _activityIndex = 0),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
                                   color: _activityIndex == 0 ? const Color(0xFF667eea).withOpacity(0.1) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.checklist, color: _activityIndex == 0 ? Color(0xFF667eea) : Colors.grey),
-                                    const SizedBox(width: 6),
-                                    Text('Nhiệm vụ', style: calendarFont.copyWith(color: _activityIndex == 0 ? Color(0xFF667eea) : Colors.grey)),
-                                  ],
-                                ),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () => setModalState(() => _activityIndex = 1),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: _activityIndex == 1 ? const Color(0xFF667eea).withOpacity(0.1) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.event, color: _activityIndex == 1 ? Color(0xFF667eea) : Colors.grey),
-                                    const SizedBox(width: 6),
-                                    Text('Sự kiện', style: calendarFont.copyWith(color: _activityIndex == 1 ? Color(0xFF667eea) : Colors.grey)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Tiêu đề
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: TextField(
-                          controller: titleController,
-                          decoration: InputDecoration(
-                            hintText: 'Tiêu đề',
-                            hintStyle: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
-                            border: InputBorder.none,
-                            enabledBorder: _titleError
-                                ? OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.red, width: 1.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  )
-                                : InputBorder.none,
-                            focusedBorder: _titleError
-                                ? OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.red, width: 1.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  )
-                                : InputBorder.none,
-                            suffixIcon: _titleError
-                                ? Icon(Icons.error, color: Colors.red)
-                                : null,
-                          ),
-                          style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
-                          onChanged: (_) {
-                            if (_titleError) {
-                              setModalState(() {
-                                _titleError = false;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Thêm chi tiết
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: TextField(
-                          controller: detailController,
-                          decoration: InputDecoration(
-                            hintText: 'Thêm chi tiết',
-                            hintStyle: calendarFont.copyWith(fontSize: 15, color: Colors.grey),
-                            border: InputBorder.none,
-                          ),
-                          style: calendarFont.copyWith(fontSize: 15),
-                          maxLines: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Thời gian
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: _pickDateTime,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
+                              child: Row(
                                 children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF667eea).withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.access_time, color: Color(0xFF667eea), size: 18),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text('Thời gian', style: calendarFont.copyWith(fontWeight: FontWeight.bold)),
-                                  const SizedBox(width: 8),
-                                  Text(formatVN(selectedDateTime), style: calendarFont),
-                                  const SizedBox(width: 8),
-                                  Text(formatTime(selectedDateTime), style: calendarFont),
+                                    Icon(Icons.checklist, color: _activityIndex == 0 ? Color(0xFF667eea) : Colors.grey),
+                                  const SizedBox(width: 6),
+                                    Text('Nhiệm vụ', style: calendarFont.copyWith(color: _activityIndex == 0 ? Color(0xFF667eea) : Colors.grey)),
                                 ],
                               ),
-                              const Icon(Icons.edit, color: Color(0xFF667eea)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Màu sắc
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                              onTap: () => setModalState(() => _activityIndex = 1),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                  color: _activityIndex == 1 ? const Color(0xFF667eea).withOpacity(0.1) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                    Icon(Icons.event, color: _activityIndex == 1 ? Color(0xFF667eea) : Colors.grey),
+                                  const SizedBox(width: 6),
+                                    Text('Sự kiện', style: calendarFont.copyWith(color: _activityIndex == 1 ? Color(0xFF667eea) : Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Tiêu đề
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          hintText: 'Tiêu đề',
+                          hintStyle: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.grey),
+                          border: InputBorder.none,
+                          enabledBorder: _titleError
+                              ? OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.red, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                )
+                              : InputBorder.none,
+                          focusedBorder: _titleError
+                              ? OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.red, width: 1.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                )
+                              : InputBorder.none,
+                          suffixIcon: _titleError
+                              ? Icon(Icons.error, color: Colors.red)
+                              : null,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
+                        onChanged: (_) {
+                          if (_titleError) {
+                            setModalState(() {
+                              _titleError = false;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Thêm chi tiết
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: TextField(
+                        controller: detailController,
+                        decoration: InputDecoration(
+                          hintText: 'Thêm chi tiết',
+                          hintStyle: calendarFont.copyWith(fontSize: 15, color: Colors.grey),
+                          border: InputBorder.none,
+                        ),
+                        style: calendarFont.copyWith(fontSize: 15),
+                        maxLines: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Thời gian
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                          onTap: _pickDateTime,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
@@ -1150,9 +1097,51 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                     color: const Color(0xFF667eea).withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.color_lens, color: Color(0xFF667eea), size: 18),
+                                  child: const Icon(Icons.access_time, color: Color(0xFF667eea), size: 18),
                                 ),
                                 const SizedBox(width: 8),
+                                Text('Thời gian', style: calendarFont.copyWith(fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 8),
+                                  Text(formatVN(selectedDateTime), style: calendarFont),
+                                const SizedBox(width: 8),
+                                  Text(formatTime(selectedDateTime), style: calendarFont),
+                              ],
+                            ),
+                            const Icon(Icons.edit, color: Color(0xFF667eea)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                      // Màu sắc
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF667eea).withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                                  child: const Icon(Icons.color_lens, color: Color(0xFF667eea), size: 18),
+                          ),
+                          const SizedBox(width: 8),
                                 Text('Màu sắc', style: calendarFont),
                               ],
                             ),
@@ -1163,10 +1152,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                 for (final color in colorOptions)
                                   GestureDetector(
                                     onTap: () {
-                                      setModalState(() {
+                              setModalState(() {
                                         selectedColor = color;
-                                      });
-                                    },
+                              });
+                            },
                                     child: Container(
                                       width: 28,
                                       height: 28,
@@ -1181,41 +1170,41 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                     ),
                                   ),
                               ],
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
                       // Lặp lại hàng tuần
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
                         margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF667eea).withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.repeat, color: Color(0xFF667eea), size: 18),
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF667eea).withOpacity(0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(width: 8),
+                                  child: const Icon(Icons.repeat, color: Color(0xFF667eea), size: 18),
+                              ),
+                              const SizedBox(width: 8),
                                 Checkbox(
                                   value: repeatWeekly,
                                   onChanged: (val) {
@@ -1237,58 +1226,58 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                     value: i + 1,
                                     child: Text('${i + 1} tuần'),
                                   )),
-                                  onChanged: (val) {
-                                    setModalState(() {
+                            onChanged: (val) {
+                              setModalState(() {
                                       repeatCount = val!;
-                                    });
-                                  },
+                              });
+                            },
                                 ),
-                              ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                    ),
                       // Quan trọng
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
                         margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                         child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF667eea).withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF667eea).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
                               child: const Icon(Icons.star, color: Color(0xFF667eea), size: 18),
-                            ),
-                            const SizedBox(width: 8),
+                              ),
+                              const SizedBox(width: 8),
                             Checkbox(
                               value: important,
                               onChanged: (val) {
                                 setModalState(() { important = val!; });
-                              },
+                                  },
                             ),
                             const Text('Quan trọng'),
-                          ],
-                        ),
+                            ],
+                          ),
                       ),
-                      const SizedBox(height: 24),
-                      // Nút apply
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                    const SizedBox(height: 24),
+                    // Nút apply
+                    const SizedBox(height: 24),
+                  ],
+              ),
                 );
               },
             );
@@ -2481,6 +2470,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final Function(bool) onWeekStartChanged;
   final bool weekStartsFromSunday;
 
+  // Thêm danh sách các ngày trong tuần
+  final List<String> weekDays = [
+    'Chủ nhật',
+    'Thứ hai',
+    'Thứ ba',
+    'Thứ tư',
+    'Thứ năm',
+    'Thứ sáu',
+    'Thứ bảy',
+  ];
+
   _SettingsScreenState({
     required this.onWeekStartChanged,
     required this.weekStartsFromSunday,
@@ -2489,7 +2489,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    weekStart = weekStartsFromSunday ? 'Chủ nhật' : 'Thứ hai';
+    // Đọc từ SharedPreferences nếu có, hoặc mặc định Thứ hai
+    // Nếu đã lưu weekStart, lấy ra, nếu không thì lấy từ weekStartsFromSunday
+    // (Để đơn giản, vẫn giữ weekStart là String)
+    // Nếu muốn đồng bộ với weekStartsFromSunday, có thể truyền thêm giá trị String
   }
 
   @override
@@ -2544,13 +2547,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: DropdownButton<String>(
                 value: weekStart,
                 underline: const SizedBox(),
-                items: ['Chủ nhật', 'Thứ hai'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                onChanged: (val) {
+                items: weekDays.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                onChanged: (val) async {
                   if (val != null) {
                     setState(() {
                       weekStart = val;
                     });
-                    onWeekStartChanged(val == 'Chủ nhật');
+                    // Lưu vào SharedPreferences
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('weekStart', val);
+                    // Gọi callback nếu cần
+                    // Bạn có thể truyền lại weekStart cho logic tuần ở các màn khác
                   }
                 },
               ),
@@ -2596,6 +2603,8 @@ class GroupScreen extends StatefulWidget {
 
 class _GroupScreenState extends State<GroupScreen> {
   final user = FirebaseAuth.instance.currentUser;
+  String _searchText = '';
+  final TextEditingController _searchController = TextEditingController();
 
   void _showCreateGroupDialog() async {
     showDialog(
@@ -2643,49 +2652,90 @@ class _GroupScreenState extends State<GroupScreen> {
         ],
       ),
       backgroundColor: const Color(0xFFF5F6FA),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-          .collection('groups')
-          .where('members', arrayContains: user?.uid)
-          // .orderBy('createdAt', descending: true) // Tạm comment để test
-          .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            final err = snapshot.error.toString();
-            if (err.contains('permission-denied')) {
-              return Center(child: Text('Bạn không có quyền truy cập nhóm. Vui lòng kiểm tra Firestore Rules hoặc đăng nhập lại.', style: calendarFont.copyWith(color: Colors.red, fontSize: 15), textAlign: TextAlign.center));
-            }
-            return Center(child: Text('Lỗi: $err', style: calendarFont.copyWith(color: Colors.red)));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final groups = snapshot.data?.docs ?? [];
-          if (groups.isEmpty) {
-            return Center(child: Text('Bạn chưa tham gia nhóm nào', style: calendarFont));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: groups.length,
-            separatorBuilder: (_, __) => SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final data = groups[i].data() as Map<String, dynamic>;
-              data['id'] = groups[i].id;
-              return GroupCard(
-                group: data,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => GroupDetailScreen(group: data)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Material(
+              elevation: 2,
+              borderRadius: BorderRadius.circular(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm nhóm...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _searchText = val;
+                  });
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+            child: Row(
+              children: [
+                Text(
+                  'Nhóm của bạn',
+                  style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Container(
+              color: const Color(0xFFF5F6FA),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                  .collection('groups')
+                  .where('members', arrayContains: user?.uid)
+                  .snapshots(),
+                builder: (context, snapshot) {
+                  var groups = snapshot.data?.docs ?? [];
+                  if (_searchText.trim().isNotEmpty) {
+                    final searchLower = _searchText.trim().toLowerCase();
+                    groups = groups.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final name = (data['name'] ?? '').toString().toLowerCase();
+                      return name.contains(searchLower);
+                    }).toList();
+                  }
+                  if (groups.isEmpty) {
+                    return Center(child: Text('Bạn chưa tham gia nhóm nào', style: calendarFont));
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    itemCount: groups.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 18),
+                    itemBuilder: (context, i) {
+                      final data = groups[i].data() as Map<String, dynamic>;
+                      data['id'] = groups[i].id;
+                      return GroupCard(
+                        group: data,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => GroupDetailScreen(group: data)),
+                          );
+                        },
+                        onGroupUpdated: () {
+                          setState(() {});
+                        },
+                      );
+                    },
                   );
                 },
-                onGroupUpdated: () {
-                  // Trigger rebuild of the stream
-                  setState(() {});
-                },
-              );
-            },
-          );
-        },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2949,7 +2999,7 @@ class GroupCard extends StatelessWidget {
           children: [
             Icon(Icons.people, color: Colors.blue),
             SizedBox(width: 8),
-            Text('Thành viên nhóm'),
+            Text('Thành viên nhóm (${members.length})'),
           ],
         ),
         content: Container(
@@ -2957,15 +3007,6 @@ class GroupCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${group['name']}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              SizedBox(height: 16),
               ...members.asMap().entries.map((entry) {
                 final index = entry.key;
                 final memberId = entry.value;
@@ -3013,17 +3054,32 @@ class GroupCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Color(avatarColor),
-                        child: Text(
-                          getInitial(),
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Color(avatarColor),
+                            child: Text(
+                              getInitial(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (isOwner)
+                            Positioned(
+                              top: -16, // cao hơn một chút
+                              left: 10, // căn giữa đầu avatar (avatar radius 20, icon size 20)
+                              child: FaIcon(
+                                FontAwesomeIcons.crown,
+                                color: Colors.amber,
+                                size: 20,
+                              ),
+                            ),
+                        ],
                       ),
                       SizedBox(width: 12),
                       Expanded(
@@ -3039,24 +3095,6 @@ class GroupCard extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if (isOwner) ...[
-                                  SizedBox(width: 8),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Chủ nhóm',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
                                 if (isCurrentUser) ...[
                                   SizedBox(width: 8),
                                   Container(
@@ -3366,59 +3404,78 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Thành viên', style: calendarFont.copyWith(fontSize: 18)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              children: [
-                ...(memberAvatars as List<dynamic>).asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final colorValue = entry.value;
-                  final memberId = index < members.length ? members[index] : null;
-                  
-                  // Lấy chữ cái đầu từ thông tin đã lưu trong group
-                  String getInitial() {
-                    if (memberId == null) return '?';
-                    
-                    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-                    final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-                    
-                    if (index < memberNames.length) {
-                      final name = memberNames[index]?.toString() ?? '';
-                      if (name.isNotEmpty) {
-                        return name[0].toUpperCase();
-                      }
-                    }
-                    
-                    if (index < memberEmails.length) {
-                      final email = memberEmails[index]?.toString() ?? '';
-                      if (email.isNotEmpty) {
-                        return email[0].toUpperCase();
-                      }
-                    }
-                    
-                    return '?';
-                  }
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(colorValue),
-                      child: Text(
-                        getInitial(),
-                        style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)
-                      ),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              margin: EdgeInsets.only(bottom: 20),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.group, color: Color(0xFF667eea)),
+                        SizedBox(width: 8),
+                        Text('Thành viên', style: calendarFont.copyWith(fontSize: 18)),
+                      ],
                     ),
-                  );
-                }),
-              ],
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      children: [
+                        ...(memberAvatars as List<dynamic>).asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final colorValue = entry.value;
+                          final memberId = index < members.length ? members[index] : null;
+                          String getInitial() {
+                            if (memberId == null) return '?';
+                            final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
+                            final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
+                            if (index < memberNames.length) {
+                              final name = memberNames[index]?.toString() ?? '';
+                              if (name.isNotEmpty) {
+                                return name[0].toUpperCase();
+                              }
+                            }
+                            if (index < memberEmails.length) {
+                              final email = memberEmails[index]?.toString() ?? '';
+                              if (email.isNotEmpty) {
+                                return email[0].toUpperCase();
+                              }
+                            }
+                            return '?';
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Color(colorValue),
+                              child: Text(
+                                getInitial(),
+                                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
+            Divider(height: 1, thickness: 1, color: Colors.grey),
+            const SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Danh sách nhiệm vụ', style: calendarFont.copyWith(fontSize: 18)),
+                Row(
+                  children: [
+                    Icon(Icons.list_alt, color: Color(0xFF667eea)),
+                    SizedBox(width: 8),
+                    Text('Danh sách nhiệm vụ', style: calendarFont.copyWith(fontSize: 18)),
+                  ],
+                ),
                 if (isOwner)
                   ElevatedButton.icon(
                     onPressed: _showAddTaskDialog,
@@ -3447,7 +3504,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 class GroupAddTaskDialog extends StatefulWidget {
   final Map<String, dynamic> group;
   final VoidCallback onTaskAdded;
-  const GroupAddTaskDialog({required this.group, required this.onTaskAdded});
+  final Map<String, dynamic>? editTask;
+  const GroupAddTaskDialog({required this.group, required this.onTaskAdded, this.editTask});
   @override
   State<GroupAddTaskDialog> createState() => _GroupAddTaskDialogState();
 }
@@ -3459,8 +3517,6 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
   DateTime _selectedDateTime = DateTime.now();
   Color _selectedColor = const Color(0xFF667eea);
   int _activityIndex = 0;
-  bool _repeatWeekly = false;
-  int _repeatCount = 1;
   bool _important = false;
   bool _loading = false;
   String? _error;
@@ -3477,6 +3533,17 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
     _memberNames = widget.group['memberNames'] ?? [];
     _memberAvatars = widget.group['memberAvatars'] ?? [];
     _selectedMembers = List.filled(_members.length, false);
+    if (widget.editTask != null) {
+      _titleController.text = widget.editTask?['title']?.toString() ?? '';
+      _descController.text = widget.editTask?['desc']?.toString() ?? '';
+      _selectedDateTime = DateTime.tryParse(widget.editTask?['dateTime']?.toString() ?? '') ?? DateTime.now();
+      _selectedColor = widget.editTask?['color'] != null ? Color(widget.editTask!['color']) : Color(0xFF667eea);
+      _activityIndex = widget.editTask?['type'] == 'su_kien' ? 1 : 0;
+      _important = widget.editTask?['important'] ?? false;
+      for (int i = 0; i < _members.length; i++) {
+        _selectedMembers[i] = (widget.editTask?['visibleTo'] as List?)?.contains(widget.group['members'][i]) ?? false;
+      }
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -3514,25 +3581,45 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
       for (int i = 0; i < _selectedMembers.length; i++) {
         if (_selectedMembers[i]) selectedUids.add(_members[i]);
       }
-      for (int i = 0; i < (_repeatWeekly ? _repeatCount : 1); i++) {
-        final date = _selectedDateTime.add(Duration(days: 7 * i));
+      // Luôn thêm chủ phòng (thành viên đầu tiên) vào visibleTo nếu chưa có
+      if (_members.isNotEmpty && !selectedUids.contains(_members[0])) {
+        selectedUids.insert(0, _members[0]);
+      }
+      if (widget.editTask != null && widget.editTask!['id'] != null) {
+        // SỬA: update document cũ, KHÔNG tạo mới
+        await FirebaseFirestore.instance
+          .collection('group_tasks')
+          .doc(widget.editTask!['id'])
+          .update({
+            'title': _titleController.text.trim(),
+            'desc': _descController.text.trim(),
+            'date': DateFormat('yyyy-MM-dd').format(_selectedDateTime),
+            'time': DateFormat('HH:mm').format(_selectedDateTime),
+            'color': _selectedColor.value,
+            'type': _activityIndex == 0 ? 'nhiem_vu' : 'su_kien',
+            'important': _important,
+            'groupId': widget.group['id'],
+            if (selectedUids.isNotEmpty) 'visibleTo': selectedUids,
+          });
+        widget.onTaskAdded();
+        Navigator.pop(context);
+      } else {
+        // THÊM MỚI
         await FirebaseFirestore.instance.collection('group_tasks').add({
           'title': _titleController.text.trim(),
           'desc': _descController.text.trim(),
-          'date': DateFormat('yyyy-MM-dd').format(date),
-          'time': DateFormat('HH:mm').format(date),
+          'date': DateFormat('yyyy-MM-dd').format(_selectedDateTime),
+          'time': DateFormat('HH:mm').format(_selectedDateTime),
           'color': _selectedColor.value,
           'type': _activityIndex == 0 ? 'nhiem_vu' : 'su_kien',
-          'createdAt': FieldValue.serverTimestamp(), // Đảm bảo luôn là timestamp
+          'createdAt': FieldValue.serverTimestamp(),
           'groupId': widget.group['id'],
           'important': _important,
           if (selectedUids.isNotEmpty) 'visibleTo': selectedUids,
-          if (_repeatWeekly) 'repeatWeekly': true,
-          if (_repeatWeekly) 'repeatCount': _repeatCount,
         });
+        widget.onTaskAdded();
+        Navigator.pop(context);
       }
-      widget.onTaskAdded();
-      Navigator.pop(context);
     } catch (e) {
       setState(() { _error = 'Thêm nhiệm vụ thất bại: ${e.toString()}'; });
     } finally {
@@ -3544,7 +3631,7 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
   Widget build(BuildContext context) {
     final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
     return AlertDialog(
-      title: Text('Thêm nhiệm vụ nhóm'),
+      title: Text(widget.editTask != null ? 'Thay đổi nhiệm vụ' : 'Thêm nhiệm vụ nhóm'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -3552,180 +3639,208 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(hintText: 'Tiêu đề'),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tiêu đề' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _descController,
-                decoration: InputDecoration(hintText: 'Chi tiết'),
-                minLines: 1,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: _pickDateTime,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: 'Ngày',
-                          border: OutlineInputBorder(),
-                        ),
-                        child: Text(DateFormat('dd/MM/yyyy').format(_selectedDateTime)),
-                      ),
+              // Tiêu đề
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextFormField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: 'Tiêu đề',
+                      border: InputBorder.none,
                     ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tiêu đề' : null,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: InkWell(
-                      onTap: _pickDateTime,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: 'Giờ',
-                          border: OutlineInputBorder(),
-                        ),
-                        child: Text(DateFormat('HH:mm').format(_selectedDateTime)),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Text('Màu: '),
-                  ...[
-                    Colors.blue, Colors.green, Colors.orange, Colors.red, Colors.purple
-                  ].map((color) => GestureDetector(
-                    onTap: () => setState(() => _selectedColor = color),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _selectedColor == color ? Colors.black : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
+              // Chi tiết
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextFormField(
+                    controller: _descController,
+                    decoration: InputDecoration(
+                      labelText: 'Chi tiết',
+                      border: InputBorder.none,
                     ),
-                  )),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => setState(() => _activityIndex = 0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _activityIndex == 0 ? _selectedColor.withOpacity(0.15) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.checklist, color: _activityIndex == 0 ? _selectedColor : Colors.grey),
-                          const SizedBox(width: 4),
-                          Text('Nhiệm vụ', style: calendarFont.copyWith(color: _activityIndex == 0 ? _selectedColor : Colors.grey)),
-                        ],
-                      ),
-                    ),
+                    minLines: 1,
+                    maxLines: 3,
                   ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => setState(() => _activityIndex = 1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _activityIndex == 1 ? _selectedColor.withOpacity(0.15) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.event, color: _activityIndex == 1 ? _selectedColor : Colors.grey),
-                          const SizedBox(width: 4),
-                          Text('Sự kiện', style: calendarFont.copyWith(color: _activityIndex == 1 ? _selectedColor : Colors.grey)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _repeatWeekly,
-                    onChanged: (v) => setState(() => _repeatWeekly = v ?? false),
+              // Ngày/giờ
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Icon(Icons.access_time, color: Color(0xFF667eea)),
+                  title: Text('Thời gian', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('${DateFormat('dd/MM/yyyy').format(_selectedDateTime)}  ${DateFormat('HH:mm').format(_selectedDateTime)}'),
+                  trailing: IconButton(
+                    icon: Icon(Icons.edit, color: Color(0xFF667eea)),
+                    onPressed: _pickDateTime,
                   ),
-                  Text('Lặp lại hàng tuần'),
-                  if (_repeatWeekly) ...[
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 40,
-                      child: TextFormField(
-                        initialValue: _repeatCount.toString(),
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-                        ),
-                        onChanged: (v) {
-                          final val = int.tryParse(v);
-                          if (val != null && val > 0) setState(() => _repeatCount = val);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text('tuần'),
-                  ],
-                ],
+                ),
               ),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _important,
-                    onChanged: (v) => setState(() => _important = v ?? false),
-                  ),
-                  Text('Quan trọng'),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text('Chọn thành viên:', style: calendarFont.copyWith(fontWeight: FontWeight.bold)),
-              ..._members.asMap().entries.map((entry) {
-                final i = entry.key;
-                final uid = entry.value;
-                final name = i < _memberNames.length ? _memberNames[i] : 'Thành viên';
-                final colorValue = i < _memberAvatars.length ? _memberAvatars[i] : Colors.grey.value;
-                return CheckboxListTile(
-                  value: _selectedMembers[i],
-                  onChanged: (v) => setState(() => _selectedMembers[i] = v ?? false),
-                  title: Row(
+              // Màu sắc
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Color(colorValue),
-                        child: Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
+                      Row(
+                        children: [
+                          Icon(Icons.color_lens, color: Color(0xFF667eea)),
+                          const SizedBox(width: 8),
+                          Text('Màu sắc', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ],
                       ),
-                      SizedBox(width: 8),
-                      Text(name),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          ...[
+                            Colors.blue, Colors.green, Colors.orange, Colors.red, Colors.purple
+                          ].map((color) => GestureDetector(
+                            onTap: () => setState(() => _selectedColor = color),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _selectedColor == color ? Color(0xFF667eea) : Colors.grey.shade300,
+                                  width: _selectedColor == color ? 3 : 2,
+                                ),
+                              ),
+                            ),
+                          )),
+                        ],
+                      ),
                     ],
                   ),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                );
-              }),
+                ),
+              ),
+              // Loại nhiệm vụ
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => setState(() => _activityIndex = 0),
+                          icon: Icon(Icons.checklist),
+                          label: Text('Nhiệm vụ'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _activityIndex == 0 ? _selectedColor : Colors.grey[200],
+                            foregroundColor: _activityIndex == 0 ? Colors.white : Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => setState(() => _activityIndex = 1),
+                          icon: Icon(Icons.event),
+                          label: Text('Sự kiện'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _activityIndex == 1 ? _selectedColor : Colors.grey[200],
+                            foregroundColor: _activityIndex == 1 ? Colors.white : Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Quan trọng
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      CheckboxListTile(
+                        value: _important,
+                        onChanged: (v) => setState(() => _important = v ?? false),
+                        title: Text('Quan trọng'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        secondary: Icon(Icons.star, color: _important ? Colors.amber : Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Chọn thành viên
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 2,
+                margin: EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.people, color: Color(0xFF667eea)),
+                          const SizedBox(width: 8),
+                          Text('Chọn thành viên', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      ..._members.asMap().entries.where((entry) => entry.key != 0).map((entry) {
+                        final i = entry.key;
+                        final uid = entry.value;
+                        final name = i < _memberNames.length ? _memberNames[i] : 'Thành viên';
+                        final colorValue = i < _memberAvatars.length ? _memberAvatars[i] : Colors.grey.value;
+                        return CheckboxListTile(
+                          value: _selectedMembers[i],
+                          onChanged: (v) => setState(() => _selectedMembers[i] = v ?? false),
+                          title: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: Color(colorValue),
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(name),
+                            ],
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -3739,7 +3854,9 @@ class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy')),
         ElevatedButton(
           onPressed: _loading ? null : _addTask,
-          child: _loading ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text('Thêm'),
+          child: _loading 
+              ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) 
+              : Text(widget.editTask != null ? 'OK' : 'Thêm'),
         ),
       ],
     );
@@ -3792,6 +3909,7 @@ class GroupTaskList extends StatelessWidget {
           separatorBuilder: (_, __) => SizedBox(height: 12),
           itemBuilder: (context, i) {
             final data = filtered[i].data() as Map<String, dynamic>;
+            data['id'] = filtered[i].id; // Đảm bảo luôn có id khi sửa
             final title = data['title'] ?? '';
             final desc = data['desc'] ?? '';
             final date = data['date'] ?? '';
@@ -3808,82 +3926,96 @@ class GroupTaskList extends StatelessWidget {
                 if (visibleTo.contains(members[i])) relatedIndexes.add(i);
               }
             }
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: important ? Border.all(color: Colors.red, width: 1.5) : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                      if (important)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Icon(Icons.priority_high, color: Colors.red, size: 20),
-                        ),
-                    ],
-                  ),
-                  if (desc.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(desc, style: TextStyle(color: Colors.grey[700])),
+            return GestureDetector(
+              onTap: () {
+                _showGroupTaskDetail(context, data, group: group); // Truyền đúng group và data có id
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
                   ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(date, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(time, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
-                      Spacer(),
-                      ...relatedIndexes.take(5).map((idx) {
-                        final name = idx < memberNames.length ? memberNames[idx] : 'M';
-                        final colorValue = idx < memberAvatars.length ? memberAvatars[idx] : Colors.grey.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: CircleAvatar(
-                            radius: 13,
-                            backgroundColor: Color(colorValue),
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold),
+                  border: important ? Border.all(color: Colors.amber, width: 2) : Border.all(color: Colors.grey.shade300, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: color,
+                              width: 2,
                             ),
                           ),
-                        );
-                      }),
-                      if (relatedIndexes.length > 5)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Text('+${relatedIndexes.length - 5}', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                          child: Icon(
+                            data['type'] == 'nhiem_vu' ? Icons.checklist : Icons.event,
+                            color: color,
+                            size: 22,
+                          ),
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ),
+                        if (important)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Icon(Icons.star, color: Colors.amber, size: 22),
+                          ),
+                      ],
+                    ),
+                    if (desc.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(desc, style: TextStyle(color: Colors.grey[700])),
                     ],
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(date, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
+                        const SizedBox(width: 12),
+                        Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(time, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
+                        Spacer(),
+                        ...relatedIndexes.take(5).map((idx) {
+                          final name = idx < memberNames.length ? memberNames[idx] : 'M';
+                          final colorValue = idx < memberAvatars.length ? memberAvatars[idx] : Colors.grey.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 2),
+                            child: CircleAvatar(
+                              radius: 13,
+                              backgroundColor: Color(colorValue),
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          );
+                        }),
+                        if (relatedIndexes.length > 5)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text('+${relatedIndexes.length - 5}', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -3891,4 +4023,102 @@ class GroupTaskList extends StatelessWidget {
       },
     );
   }
+}
+
+// 1. Thêm hàm hiển thị chi tiết task nhóm (dưới _showTaskDetail):
+void _showGroupTaskDetail(BuildContext context, Map<String, dynamic> task, {Map<String, dynamic>? group}) {
+  final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
+  showModalBottomSheet(
+    context: context,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    isScrollControlled: true,
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 24,
+          right: 24,
+          top: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Color(task['color'] ?? 0xFF667eea),
+                  width: 3,
+                ),
+              ),
+              child: Icon(
+                task['type'] == 'nhiem_vu' ? Icons.checklist : Icons.event,
+                color: Color(task['color'] ?? 0xFF667eea),
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              task['title'] ?? '',
+              style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 22),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            if ((task['desc'] ?? '').toString().isNotEmpty)
+              Text(
+                task['desc'] ?? '',
+                style: calendarFont.copyWith(fontSize: 16, color: Colors.grey[700]),
+                textAlign: TextAlign.center,
+              ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.access_time, color: Color(task['color'] ?? 0xFF667eea)),
+                const SizedBox(width: 8),
+                Text(
+                  (task['time'] ?? '') + (task['date'] != null ? '  ' + task['date'] : ''),
+                  style: calendarFont.copyWith(fontSize: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Đóng popup detail
+                    // Mở lại form sửa, truyền group và task
+                    showDialog(
+                      context: context,
+                      builder: (context) => GroupAddTaskDialog(
+                        group: group ?? {},
+                        onTaskAdded: () {},
+                        editTask: task,
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.edit, color: Colors.white),
+                  label: Text('Sửa'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(task['color'] ?? 0xFF667eea),
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    },
+  );
 }
