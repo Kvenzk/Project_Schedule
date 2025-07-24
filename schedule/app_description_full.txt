@@ -1,0 +1,63 @@
+**SCHEDULE - Ứng dụng Quản lý Lịch trình Thông minh**
+
+**Tính năng chính:**
+
+**Quản lý lịch trình linh hoạt**
+• Tạo và chỉnh sửa sự kiện dễ dàng
+• Xem lịch theo ngày, tuần, tháng
+• Đánh dấu sự kiện quan trọng
+• Thiết lập lặp lại sự kiện theo tuần
+
+**Giao diện thân thiện**
+• Thiết kế Material Design hiện đại
+• Giao diện tiếng Việt hoàn toàn
+• Tùy chỉnh giao diện theo ý thích
+• Chuyển đổi giữa chế độ sáng và tối
+
+**Bảo mật và đồng bộ**
+• Đăng nhập an toàn với Firebase
+• Đồng bộ dữ liệu trên nhiều thiết bị
+• Sao lưu tự động lên đám mây
+• Bảo vệ thông tin cá nhân
+
+**Tính năng nâng cao**
+• Tải lên hình ảnh cho sự kiện
+• Ghi chú chi tiết cho từng sự kiện
+• Tìm kiếm sự kiện nhanh chóng
+• Xuất dữ liệu lịch trình
+
+**Tùy chỉnh cá nhân**
+• Thiết lập ngày bắt đầu tuần
+• Cài đặt thông báo tùy chỉnh
+• Giao diện phù hợp với thói quen sử dụng
+• Lưu trữ cài đặt cá nhân
+
+**Thiết kế tối ưu**
+• Giao diện trực quan, dễ sử dụng
+• Tốc độ phản hồi nhanh
+• Tiết kiệm pin và dữ liệu
+• Hỗ trợ đa ngôn ngữ
+
+**Quản lý hiệu quả**
+• Theo dõi tiến độ công việc
+• Phân tích thời gian sử dụng
+• Báo cáo hoạt động hàng tuần
+• Tối ưu hóa lịch trình
+
+**Thông báo thông minh**
+• Nhắc nhở sự kiện đúng giờ
+• Thông báo sự kiện quan trọng
+• Tùy chỉnh âm thanh thông báo
+• Lặp lại thông báo theo nhu cầu
+
+**Lý do chọn Schedule:**
+• Phát triển bởi người Việt, cho người Việt
+• Giao diện tiếng Việt hoàn toàn
+• Phù hợp với văn hóa và thói quen Việt Nam
+• Hỗ trợ kỹ thuật tận tâm
+
+**Bắt đầu ngay hôm nay:**
+Tải Schedule ngay để quản lý thời gian hiệu quả hơn, sắp xếp cuộc sống một cách khoa học và đạt được mục tiêu cá nhân của bạn!
+
+**Hỗ trợ:**
+Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email hoặc trong ứng dụng. 

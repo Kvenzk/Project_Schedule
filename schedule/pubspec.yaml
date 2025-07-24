@@ -2,7 +2,7 @@ name: schedule
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+4
 
 environment:
   sdk: ^3.8.1
@@ -34,3 +34,4 @@ flutter:
   assets:
     - assets/advertise.png
     - assets/hutech.png
+    - assets/logo.png

@@ -9,6 +9,9 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'group_screen.dart';
+import 'profile_screen.dart';
+import 'setting_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -45,14 +48,11 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   final Color mainColor = const Color(0xFF667eea);
   final Color secondaryColor = const Color(0xFF764ba2);
 
-  // 1. Thêm biến trạng thái để biết có lỗi tiêu đề không
   bool _titleError = false;
 
-  // Thêm biến cho cài đặt
+
   bool _weekStartsFromSunday = false;
 
-  // --- XÓA các biến và widget liên quan đến alarm, reminder ở cả form thêm và sửa ---
-  // --- THÊM biến trạng thái cho lặp lại và quan trọng ---
   bool repeatWeekly = false;
   int repeatCount = 1;
   bool important = false;
@@ -76,22 +76,44 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     _initCurrentWeek();
   }
 
-  void _initCurrentWeek() {
+  void _initCurrentWeek() async {
     final now = DateTime.now();
-    if (_weekStartsFromSunday) {
-      // Bắt đầu từ Chủ nhật (weekday = 7)
-      _startOfWeek = now.subtract(Duration(days: now.weekday == 7 ? 0 : now.weekday));
-      _endOfWeek = _startOfWeek.add(const Duration(days: 6));
-    } else {
-      // Bắt đầu từ Thứ 2 (weekday = 1)
-      _startOfWeek = now.subtract(Duration(days: now.weekday == 7 ? 6 : now.weekday - 1));
-      _endOfWeek = _startOfWeek.add(const Duration(days: 6));
-    }
+    final prefs = await SharedPreferences.getInstance();
+    String weekStart = prefs.getString('weekStart') ?? 'Thứ hai';
+    final weekDayMap = {
+      'Chủ nhật': DateTime.sunday,
+      'Thứ hai': DateTime.monday,
+      'Thứ ba': DateTime.tuesday,
+      'Thứ tư': DateTime.wednesday,
+      'Thứ năm': DateTime.thursday,
+      'Thứ sáu': DateTime.friday,
+      'Thứ bảy': DateTime.saturday,
+    };
+    int startWeekday = weekDayMap[weekStart] ?? DateTime.monday;
+    // Tìm ngày bắt đầu tuần gần nhất
+    int diff = (now.weekday - startWeekday) % 7;
+    if (diff < 0) diff += 7;
+    _startOfWeek = now.subtract(Duration(days: diff));
+    _endOfWeek = _startOfWeek.add(const Duration(days: 6));
     _selectedDayIndex = now.difference(_startOfWeek).inDays;
     _updateDaysOfWeek();
   }
 
-  void _updateDaysOfWeek() {
+  void _updateDaysOfWeek() async {
+    // Lấy ngày bắt đầu tuần từ SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    String weekStart = prefs.getString('weekStart') ?? 'Thứ hai';
+    final weekDayMap = {
+      'Chủ nhật': DateTime.sunday,
+      'Thứ hai': DateTime.monday,
+      'Thứ ba': DateTime.tuesday,
+      'Thứ tư': DateTime.wednesday,
+      'Thứ năm': DateTime.thursday,
+      'Thứ sáu': DateTime.friday,
+      'Thứ bảy': DateTime.saturday,
+    };
+    int startWeekday = weekDayMap[weekStart] ?? DateTime.monday;
+    // Tạo danh sách 7 ngày bắt đầu từ startOfWeek
     _daysOfWeek = List.generate(7, (i) {
       final d = _startOfWeek.add(Duration(days: i));
       return {
@@ -100,6 +122,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         'dateTime': d,
       };
     });
+    // Sắp xếp lại thứ tự label cho đúng thứ bắt đầu tuần
+    // (label chỉ để hiển thị, còn dateTime đã đúng)
+    setState(() {});
   }
 
   void _goToPrevWeek() {
@@ -1388,8 +1413,19 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Dropdown tháng và năm bên trái
+                // Logo ở góc trái
+                Image.asset(
+                  'assets/logo.png',
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
+                // Spacer để đẩy dropdown sang phải
+                Spacer(),
+                // Dropdown tháng và năm bên phải
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -1431,9 +1467,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     ],
                   ),
                 ),
-                const Spacer(),
-                // XÓA ICON CHUÔNG Ở ĐÂY
-                // Nút avatar (dùng emoji mặc định)
+                const SizedBox(width: 12),
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -1482,7 +1516,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   .snapshots();
               })(),
               builder: (context, snapshot) {
-                // Xóa hiệu ứng Hoàn thành và Chưa hoàn thành, chỉ giữ hiệu ứng cho ngày hôm nay
                 return Column(
                   children: [
                     Container(
@@ -1533,20 +1566,34 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                           weekendStyle: calendarFont.copyWith(color: Colors.black87, fontWeight: FontWeight.bold),
                         ),
                         calendarBuilders: CalendarBuilders(
-                          // Không custom hiệu ứng nữa, chỉ để mặc định
+                          defaultBuilder: (context, day, focusedDay) {
+                            const specialDays = [
+                              '1/1', '3/2', '14/2', '8/3', '26/3', '30/4', '1/5', '19/5', '1/6', '27/7', '19/8', '2/9', '20/10', '20/11', '24/12',
+                            ];
+                            final key = '${day.day}/${day.month}';
+                            if (specialDays.contains(key)) {
+                              return Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Icon(Icons.star, color: Colors.amber, size: 50),
+                                    Text(
+                                      '${day.day}',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            return null;
+                          },
                         ),
                       ),
                     ),
-                    // Xóa phần chú thích Hoàn thành và Chưa hoàn thành
-                    // const SizedBox(height: 8),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   children: [
-                    //     _buildLegendDot(Colors.green, 'Hoàn thành'),
-                    //     const SizedBox(width: 16),
-                    //     _buildLegendDot(Colors.black, 'Chưa hoàn thành'),
-                    //   ],
-                    // ),
                   ],
                 );
               },
@@ -1750,6 +1797,25 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     DateTime selectedDate = _daysOfWeek[_selectedDayIndex]['dateTime'];
     String dateKey = DateFormat('yyyy-MM-dd').format(selectedDate);
     final user = FirebaseAuth.instance.currentUser;
+    // Danh sách ngày đặc biệt (dd/MM) với icon và nội dung riêng
+    const specialDayInfo = {
+      '1/1':  {'icon': Icons.celebration, 'color': Colors.red,    'text': 'Chúc mừng năm mới!'},
+      '3/2':  {'icon': Icons.flag,        'color': Colors.red,    'text': 'Kỷ niệm ngày thành lập Đảng Cộng Sản Việt Nam!'},
+      '14/2': {'icon': Icons.favorite,    'color': Colors.pink,   'text': 'Chúc mừng ngày Valentine!'},
+      '8/3':  {'icon': Icons.woman,       'color': Colors.purple, 'text': 'Chúc mừng ngày Quốc tế Phụ nữ!'},
+      '26/3': {'icon': Icons.groups,      'color': Colors.blue,   'text': 'Kỷ niệm ngày thành lập Đoàn TNCS Hồ Chí Minh!'},
+      '30/4': {'icon': Icons.flag,        'color': Colors.orange, 'text': 'Chào mừng ngày Giải phóng Miền Nam!'},
+      '1/5':  {'icon': Icons.handyman,    'color': Colors.green,  'text': 'Chúc mừng ngày Quốc tế Lao động!'},
+      '19/5': {'icon': Icons.cake,        'color': Colors.brown,  'text': 'Kỷ niệm ngày sinh Chủ tịch Hồ Chí Minh!'},
+      '1/6':  {'icon': Icons.child_care,  'color': Colors.cyan,   'text': 'Chúc mừng ngày Quốc tế Thiếu nhi!'},
+      '27/7': {'icon': Icons.military_tech,'color': Colors.amber, 'text': 'Tri ân ngày Thương binh Liệt sĩ!'},
+      '19/8': {'icon': Icons.flag,        'color': Colors.deepOrange, 'text': 'Kỷ niệm Cách mạng Tháng Tám thành công!'},
+      '2/9':  {'icon': Icons.flag,        'color': Colors.red,    'text': 'Chúc mừng ngày Quốc Khánh!'},
+      '20/10':{'icon': Icons.woman,       'color': Colors.pink,   'text': 'Chúc mừng ngày Phụ nữ Việt Nam!'},
+      '20/11':{'icon': Icons.school,      'color': Colors.deepPurple, 'text': 'Chúc mừng ngày Nhà giáo Việt Nam!'},
+      '24/12':{'icon': Icons.church,      'color': Colors.green,  'text': 'Chúc mừng Giáng sinh!'},
+    };
+    final key = '${selectedDate.day}/${selectedDate.month}';
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
         .collection('tasks')
@@ -1759,21 +1825,52 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Lỗi: ${snapshot.error}'));
+          return Center(child: Text('Lỗi: {snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-
         final tasks = snapshot.data?.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           data['id'] = doc.id;
           return data;
         }).toList() ?? [];
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (specialDayInfo.containsKey(key))
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      specialDayInfo[key]!['icon'] as IconData,
+                      color: specialDayInfo[key]!['color'] as Color,
+                      size: 32,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        specialDayInfo[key]!['text'] as String,
+                        style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.amber.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Hàng thời gian tuần và nút add
             Padding(
               padding: const EdgeInsets.only(top: 16, left: 0, right: 0, bottom: 0),
@@ -2211,7 +2308,6 @@ class _WeeklyTaskProgress extends StatelessWidget {
   }
 }
 
-// Widget vẽ sọc chéo cho ngày không có task
 class _StripedBarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -2252,7 +2348,6 @@ class _StripedBarPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 } 
 
-// Thêm hàm helper ở cuối file:
 Widget _buildLegendDot(Color color, String label, TextStyle font) {
   return Row(
     children: [
@@ -2265,1860 +2360,3 @@ Widget _buildLegendDot(Color color, String label, TextStyle font) {
     ],
   );
 } 
-
-// Thêm widget ProfileScreen ở cuối file
-class ProfileScreen extends StatefulWidget {
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  late User? user;
-  late String displayName;
-  late String email;
-  int avatarColorValue = Colors.grey.value; // mặc định
-  final List<Color> avatarColors = [
-    Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.teal, Colors.pink, Colors.amber, Colors.indigo, Colors.cyan
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    user = FirebaseAuth.instance.currentUser;
-    displayName = user?.displayName ?? '';
-    email = user?.email ?? '';
-    _ensureAvatarColor();
-  }
-
-  Future<void> _ensureAvatarColor() async {
-    if (user == null) return;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-    if (!doc.exists || !(doc.data()?.containsKey('avatarColor') ?? false)) {
-      final color = (avatarColors..shuffle()).first.value;
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'avatarColor': color,
-      }, SetOptions(merge: true));
-      setState(() { avatarColorValue = color; });
-    } else {
-      setState(() { avatarColorValue = doc['avatarColor']; });
-    }
-  }
-
-  Future<void> _editField(String field, String initialValue) async {
-    final controller = TextEditingController(text: initialValue);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Đổi tên'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.text,
-          decoration: const InputDecoration(
-            hintText: 'Nhập tên mới',
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Lưu')),
-        ],
-      ),
-    );
-    if (result != null && result.isNotEmpty) {
-      await user?.updateDisplayName(result);
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'displayName': result,
-      }, SetOptions(merge: true));
-      setState(() => displayName = result);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text('Hồ sơ cá nhân', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 24),
-            // Avatar
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Color(avatarColorValue),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                (displayName.isNotEmpty ? displayName[0] : (email.isNotEmpty ? email[0] : '?')).toUpperCase(),
-                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              displayName.isNotEmpty ? displayName : 'Chưa đặt tên',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-            ),
-            if (user?.metadata.creationTime != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  'Ngày tham gia ${user!.metadata.creationTime!.toLocal().toString().split(' ')[0]}',
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-              ),
-            const SizedBox(height: 24),
-            // General info
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Thông tin tài khoản', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 20, color: Colors.grey),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(displayName.isNotEmpty ? displayName : 'Chưa đặt tên')),
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 20, color: Colors.deepPurple),
-                        onPressed: () => _editField('displayName', displayName),
-                        tooltip: 'Đổi tên',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.email, size: 20, color: Colors.grey),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text(email)),
-                    ],
-                  ),
-                  // Đã xóa phần số điện thoại
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Sign out button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.deepPurple,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: Colors.deepPurple),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SettingsScreen extends StatefulWidget {
-  final Function(bool) onWeekStartChanged;
-  final bool weekStartsFromSunday;
-
-  const SettingsScreen({
-    Key? key,
-    required this.onWeekStartChanged,
-    required this.weekStartsFromSunday,
-  }) : super(key: key);
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState(
-    onWeekStartChanged: onWeekStartChanged,
-    weekStartsFromSunday: weekStartsFromSunday,
-  );
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  String weekStart = 'Thứ hai';
-
-  final Function(bool) onWeekStartChanged;
-  final bool weekStartsFromSunday;
-
-  // Thêm danh sách các ngày trong tuần
-  final List<String> weekDays = [
-    'Chủ nhật',
-    'Thứ hai',
-    'Thứ ba',
-    'Thứ tư',
-    'Thứ năm',
-    'Thứ sáu',
-    'Thứ bảy',
-  ];
-
-  _SettingsScreenState({
-    required this.onWeekStartChanged,
-    required this.weekStartsFromSunday,
-  });
-
-  @override
-  void initState() {
-    super.initState();
-    // Đọc từ SharedPreferences nếu có, hoặc mặc định Thứ hai
-    // Nếu đã lưu weekStart, lấy ra, nếu không thì lấy từ weekStartsFromSunday
-    // (Để đơn giản, vẫn giữ weekStart là String)
-    // Nếu muốn đồng bộ với weekStartsFromSunday, có thể truyền thêm giá trị String
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // KHÔNG có icon góc trái trên
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: const Text('CÀI ĐẶT', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          // Ảnh advertise.png
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                'assets/advertise.png',
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Thông tin cá nhân
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.person, color: Colors.deepPurple),
-              title: const Text('Thông tin cá nhân', style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileScreen()));
-              },
-            ),
-          ),
-          // Bắt đầu tuần từ
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.calendar_today, color: Colors.blue),
-              title: const Text('Bắt đầu tuần từ', style: TextStyle(fontWeight: FontWeight.w600)),
-              trailing: DropdownButton<String>(
-                value: weekStart,
-                underline: const SizedBox(),
-                items: weekDays.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                onChanged: (val) async {
-                  if (val != null) {
-                    setState(() {
-                      weekStart = val;
-                    });
-                    // Lưu vào SharedPreferences
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString('weekStart', val);
-                    // Gọi callback nếu cần
-                    // Bạn có thể truyền lại weekStart cho logic tuần ở các màn khác
-                  }
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                  Navigator.of(context).pushReplacementNamed('/login');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.deepPurple,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Colors.deepPurple),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-}
-
-// Thêm màn hình Nhóm
-class GroupScreen extends StatefulWidget {
-  @override
-  State<GroupScreen> createState() => _GroupScreenState();
-}
-
-class _GroupScreenState extends State<GroupScreen> {
-  final user = FirebaseAuth.instance.currentUser;
-  String _searchText = '';
-  final TextEditingController _searchController = TextEditingController();
-
-  void _showCreateGroupDialog() async {
-    showDialog(
-      context: context,
-      builder: (context) => GroupCreateDialog(onCreated: () => setState(() {})),
-    );
-  }
-
-  void _showJoinGroupDialog() async {
-    showDialog(
-      context: context,
-      builder: (context) => GroupJoinDialog(onJoined: () => setState(() {})),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.add, color: Color(0xFF667eea)),
-          onPressed: _showCreateGroupDialog,
-          tooltip: 'Tạo nhóm',
-        ),
-        title: Text('Nhóm', style: calendarFont.copyWith(fontWeight: FontWeight.bold, color: Colors.black)),
-        centerTitle: true,
-        actions: [
-          // Nút Tham gia nhóm nhỏ gọn
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: _showJoinGroupDialog,
-              icon: Icon(Icons.group_add, color: Color(0xFF667eea), size: 18),
-              label: Text('Tham gia', style: calendarFont.copyWith(color: Color(0xFF667eea), fontSize: 14)),
-              style: TextButton.styleFrom(
-                minimumSize: Size(0, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Material(
-              elevation: 2,
-              borderRadius: BorderRadius.circular(16),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm nhóm...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                ),
-                onChanged: (val) {
-                  setState(() {
-                    _searchText = val;
-                  });
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            child: Row(
-              children: [
-                Text(
-                  'Nhóm của bạn',
-                  style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Container(
-              color: const Color(0xFFF5F6FA),
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                  .collection('groups')
-                  .where('members', arrayContains: user?.uid)
-                  .snapshots(),
-                builder: (context, snapshot) {
-                  var groups = snapshot.data?.docs ?? [];
-                  if (_searchText.trim().isNotEmpty) {
-                    final searchLower = _searchText.trim().toLowerCase();
-                    groups = groups.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final name = (data['name'] ?? '').toString().toLowerCase();
-                      return name.contains(searchLower);
-                    }).toList();
-                  }
-                  if (groups.isEmpty) {
-                    return Center(child: Text('Bạn chưa tham gia nhóm nào', style: calendarFont));
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    itemCount: groups.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 18),
-                    itemBuilder: (context, i) {
-                      final data = groups[i].data() as Map<String, dynamic>;
-                      data['id'] = groups[i].id;
-                      return GroupCard(
-                        group: data,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => GroupDetailScreen(group: data)),
-                          );
-                        },
-                        onGroupUpdated: () {
-                          setState(() {});
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class GroupCard extends StatelessWidget {
-  final Map<String, dynamic> group;
-  final VoidCallback onTap;
-  final VoidCallback onGroupUpdated;
-  const GroupCard({required this.group, required this.onTap, required this.onGroupUpdated});
-
-  @override
-  Widget build(BuildContext context) {
-    final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w600);
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final createdAt = (group['createdAt'] as Timestamp?)?.toDate();
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final members = (group['members'] ?? []) as List<dynamic>;
-    
-    // Kiểm tra xem người dùng hiện tại có phải là chủ nhóm không (thành viên đầu tiên)
-    final isOwner = currentUser != null && members.isNotEmpty && members[0] == currentUser.uid;
-    
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(group['name'] ?? '', style: calendarFont.copyWith(fontSize: 18)),
-                ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                  onSelected: (value) async {
-                    if (value == 'delete') {
-                      await _deleteGroup(context);
-                    } else if (value == 'leave') {
-                      await _leaveGroup(context);
-                    } else if (value == 'members') {
-                      _showMembersDialog(context);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'members',
-                      child: Row(
-                        children: [
-                          Icon(Icons.people, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('Thành viên', style: TextStyle(color: Colors.blue)),
-                        ],
-                      ),
-                    ),
-                    if (isOwner)
-                      PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Xóa nhóm', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      )
-                    else
-                      PopupMenuItem<String>(
-                        value: 'leave',
-                        child: Row(
-                          children: [
-                            Icon(Icons.exit_to_app, color: Colors.orange),
-                            SizedBox(width: 8),
-                            Text('Rời nhóm', style: TextStyle(color: Colors.orange)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            if (createdAt != null)
-              Text(DateFormat('dd/MM/yyyy').format(createdAt), style: TextStyle(color: Colors.grey[700], fontSize: 14)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                ...(memberAvatars as List<dynamic>).take(5).toList().asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final colorValue = entry.value;
-                  final memberId = index < members.length ? members[index] : null;
-                  
-                  // Lấy chữ cái đầu từ thông tin đã lưu trong group
-                  String getInitial() {
-                    if (memberId == null) return '?';
-                    
-                    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-                    final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-                    
-                    if (index < memberNames.length) {
-                      final name = memberNames[index]?.toString() ?? '';
-                      if (name.isNotEmpty) {
-                        return name[0].toUpperCase();
-                      }
-                    }
-                    
-                    if (index < memberEmails.length) {
-                      final email = memberEmails[index]?.toString() ?? '';
-                      if (email.isNotEmpty) {
-                        return email[0].toUpperCase();
-                      }
-                    }
-                    
-                    return '?';
-                  }
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(colorValue),
-                      child: Text(
-                        getInitial(),
-                        style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)
-                      ),
-                    ),
-                  );
-                }),
-                if (memberAvatars.length > 5)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text('+${memberAvatars.length - 5}', style: TextStyle(color: Colors.grey[700])),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _deleteGroup(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Xác nhận xóa nhóm'),
-        content: Text('Bạn có chắc chắn muốn xóa nhóm "${group['name']}"? Hành động này không thể hoàn tác.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Xóa nhóm', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await FirebaseFirestore.instance.collection('groups').doc(group['id']).delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã xóa nhóm thành công')),
-        );
-        onGroupUpdated();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi xóa nhóm: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  Future<void> _leaveGroup(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Xác nhận rời nhóm'),
-        content: Text('Bạn có chắc chắn muốn rời khỏi nhóm "${group['name']}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text('Rời nhóm', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final currentUser = FirebaseAuth.instance.currentUser;
-        if (currentUser == null) return;
-
-        final members = (group['members'] ?? []) as List<dynamic>;
-        final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-        final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-        final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-
-        // Tìm index của người dùng hiện tại
-        final userIndex = members.indexOf(currentUser.uid);
-        if (userIndex == -1) return;
-
-        // Xóa người dùng khỏi các danh sách
-        members.removeAt(userIndex);
-        if (userIndex < memberAvatars.length) memberAvatars.removeAt(userIndex);
-        if (userIndex < memberEmails.length) memberEmails.removeAt(userIndex);
-        if (userIndex < memberNames.length) memberNames.removeAt(userIndex);
-
-        // Cập nhật nhóm trên Firebase
-        await FirebaseFirestore.instance.collection('groups').doc(group['id']).update({
-          'members': members,
-          'memberAvatars': memberAvatars,
-          'memberEmails': memberEmails,
-          'memberNames': memberNames,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã rời nhóm thành công')),
-        );
-        onGroupUpdated();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi rời nhóm: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  void _showMembersDialog(BuildContext context) {
-    final members = (group['members'] ?? []) as List<dynamic>;
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.people, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Thành viên nhóm (${members.length})'),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...members.asMap().entries.map((entry) {
-                final index = entry.key;
-                final memberId = entry.value;
-                final isOwner = index == 0;
-                final isCurrentUser = currentUser?.uid == memberId;
-                
-                // Lấy thông tin thành viên
-                String memberName = 'Thành viên';
-                String memberEmail = '';
-                
-                if (index < memberNames.length) {
-                  memberName = memberNames[index]?.toString() ?? 'Thành viên';
-                }
-                
-                if (index < memberEmails.length) {
-                  memberEmail = memberEmails[index]?.toString() ?? '';
-                }
-                
-                // Lấy màu avatar
-                int avatarColor = Colors.grey.value;
-                if (index < memberAvatars.length) {
-                  avatarColor = memberAvatars[index];
-                }
-                
-                // Lấy chữ cái đầu
-                String getInitial() {
-                  if (memberName.isNotEmpty && memberName != 'Thành viên') {
-                    return memberName[0].toUpperCase();
-                  }
-                  if (memberEmail.isNotEmpty) {
-                    return memberEmail[0].toUpperCase();
-                  }
-                  return '?';
-                }
-                
-                return Container(
-                  margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isCurrentUser ? Colors.blue.withOpacity(0.1) : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: isCurrentUser 
-                        ? Border.all(color: Colors.blue.withOpacity(0.3), width: 1)
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Color(avatarColor),
-                            child: Text(
-                              getInitial(),
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          if (isOwner)
-                            Positioned(
-                              top: -16, // cao hơn một chút
-                              left: 10, // căn giữa đầu avatar (avatar radius 20, icon size 20)
-                              child: FaIcon(
-                                FontAwesomeIcons.crown,
-                                color: Colors.amber,
-                                size: 20,
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  memberName,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (isCurrentUser) ...[
-                                  SizedBox(width: 8),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Bạn',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            if (memberEmail.isNotEmpty)
-                              Text(
-                                memberEmail,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class GroupCreateDialog extends StatefulWidget {
-  final VoidCallback onCreated;
-  const GroupCreateDialog({required this.onCreated});
-  @override
-  State<GroupCreateDialog> createState() => _GroupCreateDialogState();
-}
-
-class _GroupCreateDialogState extends State<GroupCreateDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  bool _loading = false;
-  String? _error;
-
-  Future<void> _createGroup() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
-    
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        setState(() { _error = 'Chưa đăng nhập'; });
-        return;
-      }
-      
-      final avatarColor = await _getUserAvatarColor(user);
-      final code = _generateGroupCode();
-      
-      print('Creating group with code: $code'); // Debug log
-      
-      await FirebaseFirestore.instance.collection('groups').add({
-        'name': _nameController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'code': code,
-        'members': [user.uid],
-        'memberAvatars': [avatarColor],
-        'memberEmails': [user.email ?? ''],
-        'memberNames': [user.displayName ?? user.email?.split('@')[0] ?? 'User'],
-      });
-      
-      print('Group created successfully'); // Debug log
-      
-      // Đóng dialog trước khi gọi callback
-      Navigator.pop(context);
-      
-      // Gọi callback sau khi đã đóng dialog
-      widget.onCreated();
-      
-    } catch (e) {
-      print('Error creating group: $e'); // Debug log
-      setState(() { 
-        _error = 'Tạo nhóm thất bại: ${e.toString()}'; 
-      });
-    } finally {
-      if (mounted) {
-        setState(() { _loading = false; });
-      }
-    }
-  }
-
-  Future<int> _getUserAvatarColor(User? user) async {
-    if (user == null) return Colors.grey.value;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    if (doc.exists && doc.data()!.containsKey('avatarColor')) {
-      return doc['avatarColor'];
-    }
-    return Colors.grey.value;
-  }
-
-  String _generateGroupCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return List.generate(6, (i) => chars[(DateTime.now().millisecondsSinceEpoch + i * 13) % chars.length]).join();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Tạo nhóm mới'),
-      content: Form(
-        key: _formKey,
-        child: TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(hintText: 'Tên nhóm'),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tên nhóm' : null,
-        ),
-      ),
-      actions: [
-        if (_error != null) Padding(padding: const EdgeInsets.only(right: 8), child: Text(_error!, style: TextStyle(color: Colors.red))),
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy')),
-        ElevatedButton(
-          onPressed: _loading ? null : _createGroup,
-          child: _loading ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text('Tạo'),
-        ),
-      ],
-    );
-  }
-}
-
-class GroupJoinDialog extends StatefulWidget {
-  final VoidCallback onJoined;
-  const GroupJoinDialog({required this.onJoined});
-  @override
-  State<GroupJoinDialog> createState() => _GroupJoinDialogState();
-}
-
-class _GroupJoinDialogState extends State<GroupJoinDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _codeController = TextEditingController();
-  bool _loading = false;
-  String? _error;
-
-  Future<void> _joinGroup() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
-    final user = FirebaseAuth.instance.currentUser;
-    final avatarColor = await _getUserAvatarColor(user);
-    try {
-      final query = await FirebaseFirestore.instance.collection('groups').where('code', isEqualTo: _codeController.text.trim()).get();
-      if (query.docs.isEmpty) {
-        setState(() { _error = 'Không tìm thấy nhóm'; });
-      } else {
-        final doc = query.docs.first;
-        final data = doc.data();
-        final members = List<String>.from(data['members'] ?? []);
-        final memberAvatars = List<int>.from(data['memberAvatars'] ?? []);
-        final memberEmails = List<String>.from(data['memberEmails'] ?? []);
-        final memberNames = List<String>.from(data['memberNames'] ?? []);
-        
-        if (!members.contains(user?.uid)) {
-          members.add(user!.uid);
-          memberAvatars.add(avatarColor);
-          memberEmails.add(user.email ?? '');
-          memberNames.add(user.displayName ?? user.email?.split('@')[0] ?? 'User');
-          
-          await FirebaseFirestore.instance.collection('groups').doc(doc.id).update({
-            'members': members,
-            'memberAvatars': memberAvatars,
-            'memberEmails': memberEmails,
-            'memberNames': memberNames,
-          });
-        }
-        widget.onJoined();
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      setState(() { _error = 'Tham gia nhóm thất bại'; });
-    } finally {
-      setState(() { _loading = false; });
-    }
-  }
-
-  Future<int> _getUserAvatarColor(User? user) async {
-    if (user == null) return Colors.grey.value;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    if (doc.exists && doc.data()!.containsKey('avatarColor')) {
-      return doc['avatarColor'];
-    }
-    return Colors.grey.value;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Tham gia nhóm'),
-      content: Form(
-        key: _formKey,
-        child: TextFormField(
-          controller: _codeController,
-          decoration: InputDecoration(hintText: 'Nhập mã nhóm'),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Nhập mã nhóm' : null,
-        ),
-      ),
-      actions: [
-        if (_error != null) Padding(padding: const EdgeInsets.only(right: 8), child: Text(_error!, style: TextStyle(color: Colors.red))),
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy')),
-        ElevatedButton(
-          onPressed: _loading ? null : _joinGroup,
-          child: _loading ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text('Tham gia'),
-        ),
-      ],
-    );
-  }
-}
-
-class GroupDetailScreen extends StatefulWidget {
-  final Map<String, dynamic> group;
-  const GroupDetailScreen({required this.group});
-  @override
-  State<GroupDetailScreen> createState() => _GroupDetailScreenState();
-}
-
-class _GroupDetailScreenState extends State<GroupDetailScreen> {
-  void _showAddTaskDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => GroupAddTaskDialog(
-        group: widget.group,
-        onTaskAdded: () => setState(() {}),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final group = widget.group;
-    final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.bold);
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final members = (group['members'] ?? []) as List<dynamic>;
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isOwner = currentUser != null && members.isNotEmpty && members[0] == currentUser.uid;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF667eea)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(group['name'] ?? '', style: calendarFont.copyWith(color: Colors.black)),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: group['code'] ?? ''));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã copy mã nhóm: ${group['code']}'),
-                      duration: Duration(seconds: 2),
-                      backgroundColor: Color(0xFF667eea),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF667eea).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(group['code'] ?? '', style: TextStyle(color: Color(0xFF667eea), fontWeight: FontWeight.bold)),
-                      SizedBox(width: 4),
-                      Icon(Icons.copy, color: Color(0xFF667eea), size: 16),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              margin: EdgeInsets.only(bottom: 20),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.group, color: Color(0xFF667eea)),
-                        SizedBox(width: 8),
-                        Text('Thành viên', style: calendarFont.copyWith(fontSize: 18)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        ...(memberAvatars as List<dynamic>).asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final colorValue = entry.value;
-                          final memberId = index < members.length ? members[index] : null;
-                          String getInitial() {
-                            if (memberId == null) return '?';
-                            final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-                            final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-                            if (index < memberNames.length) {
-                              final name = memberNames[index]?.toString() ?? '';
-                              if (name.isNotEmpty) {
-                                return name[0].toUpperCase();
-                              }
-                            }
-                            if (index < memberEmails.length) {
-                              final email = memberEmails[index]?.toString() ?? '';
-                              if (email.isNotEmpty) {
-                                return email[0].toUpperCase();
-                              }
-                            }
-                            return '?';
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Color(colorValue),
-                              child: Text(
-                                getInitial(),
-                                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)
-                              ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(height: 1, thickness: 1, color: Colors.grey),
-            const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.list_alt, color: Color(0xFF667eea)),
-                    SizedBox(width: 8),
-                    Text('Danh sách nhiệm vụ', style: calendarFont.copyWith(fontSize: 18)),
-                  ],
-                ),
-                if (isOwner)
-                  ElevatedButton.icon(
-                    onPressed: _showAddTaskDialog,
-                    icon: Icon(Icons.add, size: 18),
-                    label: Text('Thêm'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF667eea),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: GroupTaskList(group: group),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class GroupAddTaskDialog extends StatefulWidget {
-  final Map<String, dynamic> group;
-  final VoidCallback onTaskAdded;
-  final Map<String, dynamic>? editTask;
-  const GroupAddTaskDialog({required this.group, required this.onTaskAdded, this.editTask});
-  @override
-  State<GroupAddTaskDialog> createState() => _GroupAddTaskDialogState();
-}
-
-class _GroupAddTaskDialogState extends State<GroupAddTaskDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  DateTime _selectedDateTime = DateTime.now();
-  Color _selectedColor = const Color(0xFF667eea);
-  int _activityIndex = 0;
-  bool _important = false;
-  bool _loading = false;
-  String? _error;
-
-  late List<dynamic> _members;
-  late List<dynamic> _memberNames;
-  late List<dynamic> _memberAvatars;
-  late List<bool> _selectedMembers;
-
-  @override
-  void initState() {
-    super.initState();
-    _members = widget.group['members'] ?? [];
-    _memberNames = widget.group['memberNames'] ?? [];
-    _memberAvatars = widget.group['memberAvatars'] ?? [];
-    _selectedMembers = List.filled(_members.length, false);
-    if (widget.editTask != null) {
-      _titleController.text = widget.editTask?['title']?.toString() ?? '';
-      _descController.text = widget.editTask?['desc']?.toString() ?? '';
-      _selectedDateTime = DateTime.tryParse(widget.editTask?['dateTime']?.toString() ?? '') ?? DateTime.now();
-      _selectedColor = widget.editTask?['color'] != null ? Color(widget.editTask!['color']) : Color(0xFF667eea);
-      _activityIndex = widget.editTask?['type'] == 'su_kien' ? 1 : 0;
-      _important = widget.editTask?['important'] ?? false;
-      for (int i = 0; i < _members.length; i++) {
-        _selectedMembers[i] = (widget.editTask?['visibleTo'] as List?)?.contains(widget.group['members'][i]) ?? false;
-      }
-    }
-  }
-
-  Future<void> _pickDateTime() async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDateTime,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: const Locale('vi', 'VN'),
-    );
-    if (pickedDate != null) {
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
-      );
-      if (pickedTime != null) {
-        setState(() {
-          _selectedDateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        });
-      }
-    }
-  }
-
-  Future<void> _addTask() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
-    try {
-      final selectedUids = <String>[];
-      for (int i = 0; i < _selectedMembers.length; i++) {
-        if (_selectedMembers[i]) selectedUids.add(_members[i]);
-      }
-      // Luôn thêm chủ phòng (thành viên đầu tiên) vào visibleTo nếu chưa có
-      if (_members.isNotEmpty && !selectedUids.contains(_members[0])) {
-        selectedUids.insert(0, _members[0]);
-      }
-      if (widget.editTask != null && widget.editTask!['id'] != null) {
-        // SỬA: update document cũ, KHÔNG tạo mới
-        await FirebaseFirestore.instance
-          .collection('group_tasks')
-          .doc(widget.editTask!['id'])
-          .update({
-            'title': _titleController.text.trim(),
-            'desc': _descController.text.trim(),
-            'date': DateFormat('yyyy-MM-dd').format(_selectedDateTime),
-            'time': DateFormat('HH:mm').format(_selectedDateTime),
-            'color': _selectedColor.value,
-            'type': _activityIndex == 0 ? 'nhiem_vu' : 'su_kien',
-            'important': _important,
-            'groupId': widget.group['id'],
-            if (selectedUids.isNotEmpty) 'visibleTo': selectedUids,
-          });
-        widget.onTaskAdded();
-        Navigator.pop(context);
-      } else {
-        // THÊM MỚI
-        await FirebaseFirestore.instance.collection('group_tasks').add({
-          'title': _titleController.text.trim(),
-          'desc': _descController.text.trim(),
-          'date': DateFormat('yyyy-MM-dd').format(_selectedDateTime),
-          'time': DateFormat('HH:mm').format(_selectedDateTime),
-          'color': _selectedColor.value,
-          'type': _activityIndex == 0 ? 'nhiem_vu' : 'su_kien',
-          'createdAt': FieldValue.serverTimestamp(),
-          'groupId': widget.group['id'],
-          'important': _important,
-          if (selectedUids.isNotEmpty) 'visibleTo': selectedUids,
-        });
-        widget.onTaskAdded();
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      setState(() { _error = 'Thêm nhiệm vụ thất bại: ${e.toString()}'; });
-    } finally {
-      setState(() { _loading = false; });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
-    return AlertDialog(
-      title: Text(widget.editTask != null ? 'Thay đổi nhiệm vụ' : 'Thêm nhiệm vụ nhóm'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Tiêu đề
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Tiêu đề',
-                      border: InputBorder.none,
-                    ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tiêu đề' : null,
-                  ),
-                ),
-              ),
-              // Chi tiết
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: TextFormField(
-                    controller: _descController,
-                    decoration: InputDecoration(
-                      labelText: 'Chi tiết',
-                      border: InputBorder.none,
-                    ),
-                    minLines: 1,
-                    maxLines: 3,
-                  ),
-                ),
-              ),
-              // Ngày/giờ
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: Icon(Icons.access_time, color: Color(0xFF667eea)),
-                  title: Text('Thời gian', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${DateFormat('dd/MM/yyyy').format(_selectedDateTime)}  ${DateFormat('HH:mm').format(_selectedDateTime)}'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.edit, color: Color(0xFF667eea)),
-                    onPressed: _pickDateTime,
-                  ),
-                ),
-              ),
-              // Màu sắc
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.color_lens, color: Color(0xFF667eea)),
-                          const SizedBox(width: 8),
-                          Text('Màu sắc', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          ...[
-                            Colors.blue, Colors.green, Colors.orange, Colors.red, Colors.purple
-                          ].map((color) => GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: _selectedColor == color ? Color(0xFF667eea) : Colors.grey.shade300,
-                                  width: _selectedColor == color ? 3 : 2,
-                                ),
-                              ),
-                            ),
-                          )),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Loại nhiệm vụ
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => setState(() => _activityIndex = 0),
-                          icon: Icon(Icons.checklist),
-                          label: Text('Nhiệm vụ'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _activityIndex == 0 ? _selectedColor : Colors.grey[200],
-                            foregroundColor: _activityIndex == 0 ? Colors.white : Colors.black,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => setState(() => _activityIndex = 1),
-                          icon: Icon(Icons.event),
-                          label: Text('Sự kiện'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _activityIndex == 1 ? _selectedColor : Colors.grey[200],
-                            foregroundColor: _activityIndex == 1 ? Colors.white : Colors.black,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Quan trọng
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      CheckboxListTile(
-                        value: _important,
-                        onChanged: (v) => setState(() => _important = v ?? false),
-                        title: Text('Quan trọng'),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        secondary: Icon(Icons.star, color: _important ? Colors.amber : Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Chọn thành viên
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                margin: EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.people, color: Color(0xFF667eea)),
-                          const SizedBox(width: 8),
-                          Text('Chọn thành viên', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      ..._members.asMap().entries.where((entry) => entry.key != 0).map((entry) {
-                        final i = entry.key;
-                        final uid = entry.value;
-                        final name = i < _memberNames.length ? _memberNames[i] : 'Thành viên';
-                        final colorValue = i < _memberAvatars.length ? _memberAvatars[i] : Colors.grey.value;
-                        return CheckboxListTile(
-                          value: _selectedMembers[i],
-                          onChanged: (v) => setState(() => _selectedMembers[i] = v ?? false),
-                          title: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 14,
-                                backgroundColor: Color(colorValue),
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text(name),
-                            ],
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(_error!, style: TextStyle(color: Colors.red)),
-                ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy')),
-        ElevatedButton(
-          onPressed: _loading ? null : _addTask,
-          child: _loading 
-              ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) 
-              : Text(widget.editTask != null ? 'OK' : 'Thêm'),
-        ),
-      ],
-    );
-  }
-}
-
-class GroupTaskList extends StatelessWidget {
-  final Map<String, dynamic> group;
-  const GroupTaskList({required this.group});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final groupId = group['id'];
-    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final members = (group['members'] ?? []) as List<dynamic>;
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-        .collection('group_tasks')
-        .where('groupId', isEqualTo: groupId)
-        .orderBy('createdAt', descending: true)
-        .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          // Hiển thị lỗi chi tiết
-          return Center(child: Text('Lỗi tải nhiệm vụ nhóm: \\n${snapshot.error}', textAlign: TextAlign.center));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final docs = snapshot.data?.docs ?? [];
-        // Lọc task theo quyền xem, dùng try-catch để tránh lỗi
-        final filtered = docs.where((doc) {
-          try {
-            final data = doc.data() as Map<String, dynamic>;
-            final visibleTo = data['visibleTo'] as List<dynamic>?;
-            if (visibleTo == null) return true;
-            return user != null && visibleTo.contains(user.uid);
-          } catch (e) {
-            // Nếu lỗi parse, bỏ qua document này
-            return false;
-          }
-        }).toList();
-        if (filtered.isEmpty) {
-          return Center(child: Text('Chưa có nhiệm vụ nào trong nhóm này.'));
-        }
-        return ListView.separated(
-          itemCount: filtered.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12),
-          itemBuilder: (context, i) {
-            final data = filtered[i].data() as Map<String, dynamic>;
-            data['id'] = filtered[i].id; // Đảm bảo luôn có id khi sửa
-            final title = data['title'] ?? '';
-            final desc = data['desc'] ?? '';
-            final date = data['date'] ?? '';
-            final time = data['time'] ?? '';
-            final color = data['color'] != null ? Color(data['color']) : Color(0xFF667eea);
-            final important = data['important'] == true;
-            final visibleTo = data['visibleTo'] as List<dynamic>?;
-            // Lấy danh sách thành viên liên quan
-            List<int> relatedIndexes = [];
-            if (visibleTo == null) {
-              relatedIndexes = List.generate(members.length, (i) => i);
-            } else {
-              for (int i = 0; i < members.length; i++) {
-                if (visibleTo.contains(members[i])) relatedIndexes.add(i);
-              }
-            }
-            return GestureDetector(
-              onTap: () {
-                _showGroupTaskDetail(context, data, group: group); // Truyền đúng group và data có id
-              },
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                  border: important ? Border.all(color: Colors.amber, width: 2) : Border.all(color: Colors.grey.shade300, width: 2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: color,
-                              width: 2,
-                            ),
-                          ),
-                          child: Icon(
-                            data['type'] == 'nhiem_vu' ? Icons.checklist : Icons.event,
-                            color: color,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        ),
-                        if (important)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Icon(Icons.star, color: Colors.amber, size: 22),
-                          ),
-                      ],
-                    ),
-                    if (desc.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(desc, style: TextStyle(color: Colors.grey[700])),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(date, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
-                        const SizedBox(width: 12),
-                        Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(time, style: TextStyle(color: Colors.grey[800], fontSize: 14)),
-                        Spacer(),
-                        ...relatedIndexes.take(5).map((idx) {
-                          final name = idx < memberNames.length ? memberNames[idx] : 'M';
-                          final colorValue = idx < memberAvatars.length ? memberAvatars[idx] : Colors.grey.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 2),
-                            child: CircleAvatar(
-                              radius: 13,
-                              backgroundColor: Color(colorValue),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          );
-                        }),
-                        if (relatedIndexes.length > 5)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Text('+${relatedIndexes.length - 5}', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-// 1. Thêm hàm hiển thị chi tiết task nhóm (dưới _showTaskDetail):
-void _showGroupTaskDetail(BuildContext context, Map<String, dynamic> task, {Map<String, dynamic>? group}) {
-  final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
-  showModalBottomSheet(
-    context: context,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    isScrollControlled: true,
-    builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Color(task['color'] ?? 0xFF667eea),
-                  width: 3,
-                ),
-              ),
-              child: Icon(
-                task['type'] == 'nhiem_vu' ? Icons.checklist : Icons.event,
-                color: Color(task['color'] ?? 0xFF667eea),
-                size: 36,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              task['title'] ?? '',
-              style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 22),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            if ((task['desc'] ?? '').toString().isNotEmpty)
-              Text(
-                task['desc'] ?? '',
-                style: calendarFont.copyWith(fontSize: 16, color: Colors.grey[700]),
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.access_time, color: Color(task['color'] ?? 0xFF667eea)),
-                const SizedBox(width: 8),
-                Text(
-                  (task['time'] ?? '') + (task['date'] != null ? '  ' + task['date'] : ''),
-                  style: calendarFont.copyWith(fontSize: 16),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context); // Đóng popup detail
-                    // Mở lại form sửa, truyền group và task
-                    showDialog(
-                      context: context,
-                      builder: (context) => GroupAddTaskDialog(
-                        group: group ?? {},
-                        onTaskAdded: () {},
-                        editTask: task,
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.edit, color: Colors.white),
-                  label: Text('Sửa'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(task['color'] ?? 0xFF667eea),
-                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      );
-    },
-  );
-}
