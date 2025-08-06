@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Groups collection - members can read/write group data
+    match /groups/{groupId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid in resource.data.members;
+      allow create: if request.auth != null;
+    }
+    
+    // Group tasks collection - members can read/write tasks
+    match /group_tasks/{taskId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid in resource.data.visibleTo;
+      allow create: if request.auth != null;
+      
+      // Comments subcollection - members can read/write comments
+      match /comments/{commentId} {
+        allow read, write: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/group_tasks/$(taskId)).data.visibleTo;
+        allow create: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/group_tasks/$(taskId)).data.visibleTo;
+        allow delete: if request.auth != null && 
+          request.auth.uid == resource.data.userId;
+      }
+    }
+    
+    // Individual tasks collection - users can read/write their own tasks
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null;
+    }
+  }
+} 

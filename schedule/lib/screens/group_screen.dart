@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'group_task_detail_screen.dart';
 
 
 /// Widget chính cho trang nhóm
@@ -155,22 +156,28 @@ class _GroupScreenState extends State<GroupScreen> {
 }
 
 /// Card hiển thị thông tin nhóm
-class GroupCard extends StatelessWidget {
+class GroupCard extends StatefulWidget {
   final Map<String, dynamic> group;
   final VoidCallback onTap;
   final VoidCallback onGroupUpdated;
   const GroupCard({required this.group, required this.onTap, required this.onGroupUpdated});
+  
+  @override
+  State<GroupCard> createState() => _GroupCardState();
+}
+
+class _GroupCardState extends State<GroupCard> {
 
   @override
   Widget build(BuildContext context) {
     final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w600);
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final createdAt = (group['createdAt'] as Timestamp?)?.toDate();
+    final memberAvatars = (widget.group['memberAvatars'] ?? []) as List<dynamic>;
+    final createdAt = (widget.group['createdAt'] as Timestamp?)?.toDate();
     final currentUser = FirebaseAuth.instance.currentUser;
-    final members = (group['members'] ?? []) as List<dynamic>;
+    final members = (widget.group['members'] ?? []) as List<dynamic>;
     final isOwner = currentUser != null && members.isNotEmpty && members[0] == currentUser.uid;
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -190,20 +197,20 @@ class GroupCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(group['name'] ?? '', style: calendarFont.copyWith(fontSize: 18)),
-                ),
+                                 Expanded(
+                   child: Text(widget.group['name'] ?? '', style: calendarFont.copyWith(fontSize: 18)),
+                 ),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                  onSelected: (value) async {
-                    if (value == 'delete') {
-                      await _deleteGroup(context);
-                    } else if (value == 'leave') {
-                      await _leaveGroup(context);
-                    } else if (value == 'members') {
-                      _showMembersDialog(context);
-                    }
-                  },
+                                     onSelected: (value) async {
+                     if (value == 'delete') {
+                       await _deleteGroup(context, widget.group);
+                     } else if (value == 'leave') {
+                       await _leaveGroup(context, widget.group);
+                     } else if (value == 'members') {
+                       _showMembersDialog(context, widget.group);
+                     }
+                   },
                   itemBuilder: (context) => [
                     PopupMenuItem<String>(
                       value: 'members',
@@ -253,8 +260,8 @@ class GroupCard extends StatelessWidget {
                   final memberId = index < members.length ? members[index] : null;
                   String getInitial() {
                     if (memberId == null) return '?';
-                    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
-                    final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
+                    final memberNames = (widget.group['memberNames'] ?? []) as List<dynamic>;
+                    final memberEmails = (widget.group['memberEmails'] ?? []) as List<dynamic>;
                     if (index < memberNames.length) {
                       final name = memberNames[index]?.toString() ?? '';
                       if (name.isNotEmpty) {
@@ -295,12 +302,12 @@ class GroupCard extends StatelessWidget {
   }
 
   // Xóa nhóm
-  Future<void> _deleteGroup(BuildContext context) async {
+  Future<void> _deleteGroup(BuildContext context, Map<String, dynamic> group) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Xác nhận xóa nhóm'),
-        content: Text('Bạn có chắc chắn muốn xóa nhóm "${group['name']}"? Hành động này không thể hoàn tác.'),
+        content: Text('Bạn có chắc chắn muốn xóa nhóm "${widget.group['name']}"? Hành động này không thể hoàn tác.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -317,11 +324,11 @@ class GroupCard extends StatelessWidget {
 
     if (confirmed == true) {
       try {
-        await FirebaseFirestore.instance.collection('groups').doc(group['id']).delete();
+        await FirebaseFirestore.instance.collection('groups').doc(widget.group['id']).delete();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đã xóa nhóm thành công')),
         );
-        onGroupUpdated();
+        widget.onGroupUpdated();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi xóa nhóm: ${e.toString()}')),
@@ -331,12 +338,12 @@ class GroupCard extends StatelessWidget {
   }
 
   // Rời nhóm
-  Future<void> _leaveGroup(BuildContext context) async {
+  Future<void> _leaveGroup(BuildContext context, Map<String, dynamic> group) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Xác nhận rời nhóm'),
-        content: Text('Bạn có chắc chắn muốn rời khỏi nhóm "${group['name']}"?'),
+        content: Text('Bạn có chắc chắn muốn rời khỏi nhóm "${widget.group['name']}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -356,10 +363,10 @@ class GroupCard extends StatelessWidget {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser == null) return;
 
-        final members = (group['members'] ?? []) as List<dynamic>;
-        final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-        final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-        final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
+        final members = (widget.group['members'] ?? []) as List<dynamic>;
+        final memberAvatars = (widget.group['memberAvatars'] ?? []) as List<dynamic>;
+        final memberEmails = (widget.group['memberEmails'] ?? []) as List<dynamic>;
+        final memberNames = (widget.group['memberNames'] ?? []) as List<dynamic>;
 
         final userIndex = members.indexOf(currentUser.uid);
         if (userIndex == -1) return;
@@ -369,17 +376,17 @@ class GroupCard extends StatelessWidget {
         if (userIndex < memberEmails.length) memberEmails.removeAt(userIndex);
         if (userIndex < memberNames.length) memberNames.removeAt(userIndex);
 
-        await FirebaseFirestore.instance.collection('groups').doc(group['id']).update({
+        await FirebaseFirestore.instance.collection('groups').doc(widget.group['id']).update({
           'members': members,
           'memberAvatars': memberAvatars,
           'memberEmails': memberEmails,
           'memberNames': memberNames,
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đã rời nhóm thành công')),
         );
-        onGroupUpdated();
+        widget.onGroupUpdated();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi rời nhóm: ${e.toString()}')),
@@ -389,11 +396,11 @@ class GroupCard extends StatelessWidget {
   }
 
   // Hiển thị danh sách thành viên nhóm
-  void _showMembersDialog(BuildContext context) {
-    final members = (group['members'] ?? []) as List<dynamic>;
-    final memberAvatars = (group['memberAvatars'] ?? []) as List<dynamic>;
-    final memberEmails = (group['memberEmails'] ?? []) as List<dynamic>;
-    final memberNames = (group['memberNames'] ?? []) as List<dynamic>;
+  void _showMembersDialog(BuildContext context, Map<String, dynamic> group) {
+    final members = (widget.group['members'] ?? []) as List<dynamic>;
+    final memberAvatars = (widget.group['memberAvatars'] ?? []) as List<dynamic>;
+    final memberEmails = (widget.group['memberEmails'] ?? []) as List<dynamic>;
+    final memberNames = (widget.group['memberNames'] ?? []) as List<dynamic>;
     final currentUser = FirebaseAuth.instance.currentUser;
 
     showDialog(
@@ -414,8 +421,9 @@ class GroupCard extends StatelessWidget {
               ...members.asMap().entries.map((entry) {
                 final index = entry.key;
                 final memberId = entry.value;
-                final isOwner = index == 0;
+                final isOwnerMember = index == 0;
                 final isCurrentUser = currentUser?.uid == memberId;
+                
                 String memberName = 'Thành viên';
                 String memberEmail = '';
                 if (index < memberNames.length) {
@@ -438,90 +446,95 @@ class GroupCard extends StatelessWidget {
                   return '?';
                 }
                 return Container(
-                  margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isCurrentUser ? Colors.blue.withOpacity(0.1) : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: isCurrentUser 
-                        ? Border.all(color: Colors.blue.withOpacity(0.3), width: 1)
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Color(avatarColor),
-                            child: Text(
-                              getInitial(),
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          if (isOwner)
-                            Positioned(
-                              top: -16,
-                              left: 10,
-                              child: FaIcon(
-                                FontAwesomeIcons.crown,
-                                color: Colors.amber,
-                                size: 20,
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Container(
+                    margin: EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isCurrentUser ? Colors.blue.withOpacity(0.1) : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: isCurrentUser 
+                          ? Border.all(color: Colors.blue.withOpacity(0.3), width: 1)
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  memberName,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (isCurrentUser) ...[
-                                  SizedBox(width: 8),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'Bạn',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            if (memberEmail.isNotEmpty)
-                              Text(
-                                memberEmail,
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Color(avatarColor),
+                              child: Text(
+                                getInitial(),
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
+                            ),
+                            if (isOwnerMember)
+                              Positioned(
+                                top: -16,
+                                left: 10,
+                                child: FaIcon(
+                                  FontAwesomeIcons.crown,
+                                  color: Colors.amber,
+                                  size: 20,
+                                ),
+                              ),
+
                           ],
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    memberName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (isCurrentUser) ...[
+                                    SizedBox(width: 8),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Bạn',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                ],
+                              ),
+                              if (memberEmail.isNotEmpty)
+                                Text(
+                                  memberEmail,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -537,6 +550,8 @@ class GroupCard extends StatelessWidget {
       ),
     );
   }
+
+
 }
 
 /// Dialog tạo nhóm mới
@@ -1411,97 +1426,12 @@ class GroupTaskList extends StatelessWidget {
 
 /// Hàm hiển thị chi tiết nhiệm vụ nhóm
 void _showGroupTaskDetail(BuildContext context, Map<String, dynamic> task, {Map<String, dynamic>? group}) {
-  final calendarFont = GoogleFonts.montserrat(fontWeight: FontWeight.w500);
-  showModalBottomSheet(
-    context: context,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => GroupTaskDetailScreen(
+        task: task,
+        group: group ?? {},
+      ),
     ),
-    isScrollControlled: true,
-    builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Color(task['color'] ?? 0xFF667eea),
-                  width: 3,
-                ),
-              ),
-              child: Icon(
-                task['type'] == 'nhiem_vu' ? Icons.checklist : Icons.event,
-                color: Color(task['color'] ?? 0xFF667eea),
-                size: 36,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              task['title'] ?? '',
-              style: calendarFont.copyWith(fontWeight: FontWeight.bold, fontSize: 22),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            if ((task['desc'] ?? '').toString().isNotEmpty)
-              Text(
-                task['desc'] ?? '',
-                style: calendarFont.copyWith(fontSize: 16, color: Colors.grey[700]),
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.access_time, color: Color(task['color'] ?? 0xFF667eea)),
-                const SizedBox(width: 8),
-                Text(
-                  (task['time'] ?? '') + (task['date'] != null ? '  ' + task['date'] : ''),
-                  style: calendarFont.copyWith(fontSize: 16),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    showDialog(
-                      context: context,
-                      builder: (context) => GroupAddTaskDialog(
-                        group: group ?? {},
-                        onTaskAdded: () {},
-                        editTask: task,
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.edit, color: Colors.white),
-                  label: Text('Sửa'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(task['color'] ?? 0xFF667eea),
-                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      );
-    },
   );
 } 

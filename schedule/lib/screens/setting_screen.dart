@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
+import 'activity_history_screen.dart';
 
 
 
@@ -84,6 +85,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
               onTap: () {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProfileScreen()));
+              },
+            ),
+          ),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              leading: const Icon(Icons.history, color: Colors.orange),
+              title: const Text('Tiến độ cá nhân', style: TextStyle(fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ActivityHistoryScreen()));
               },
             ),
           ),
